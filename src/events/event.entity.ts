@@ -22,4 +22,6 @@ export class Event {
     cascade: true
   })
   attendees: Attendee[];
+
+  attendeeCount?: number;
 }
