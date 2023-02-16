@@ -18,6 +18,7 @@ import { UpdateEventDto } from './update-event.dto';
 import { Event } from './event.entity';
 import { Like, MoreThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Attendee } from './attendee.entity';
 
 @Controller('/events')
 export class EventsController {
@@ -26,12 +27,14 @@ export class EventsController {
   constructor(
     @InjectRepository(Event)
     private readonly repository: Repository<Event>,
+    @InjectRepository(Attendee)
+    private readonly attendeeRepository: Repository<Attendee>,
   ) {}
 
   @Get()
   async findAll() {
     this.logger.log('Hit the findAll route');
-    const events =  await this.repository.find();
+    const events = await this.repository.find();
     this.logger.debug(`Found ${events.length} events`);
     return events;
   }
@@ -64,13 +67,29 @@ export class EventsController {
       },
       relations: ['attendees']
     });
-    return event; 
+    // return event;
+
+    // const event = new Event();
+    // event.id = 1;
+
+    const attendee = new Attendee();
+    attendee.name = 'Using cascade';
+    attendee.event = event;
+
+    event.attendees.push(attendee);
+    // event.attendees = [];
+
+    // await this.attendeeRepository.save(attendee);
+    await this.repository.save(event);
+
+
+    return event;
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     // console.log(typeof id);
-    const event =  await this.repository.findOne({
+    const event = await this.repository.findOne({
       where: {
         id: id,
       },
@@ -92,10 +111,7 @@ export class EventsController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id,
-    @Body() input: UpdateEventDto,
-  ) {
+  async update(@Param('id') id, @Body() input: UpdateEventDto) {
     const event = await this.repository.findOne({
       where: {
         id: id,
